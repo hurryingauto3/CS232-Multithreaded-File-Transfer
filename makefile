@@ -1,1 +1,5 @@
-/home/aliha/Fall2021/operating-systems/homeworks/homework3/code/makefile
+all: server client
+server: server.c helpers.h
+	gcc -o server server.c helpers.h -lpthread
+client: client.c helpers.h
+	gcc -o client client.c helpers.h -lpthread

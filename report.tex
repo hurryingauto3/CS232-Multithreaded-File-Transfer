@@ -1,1 +1,175 @@
-/home/aliha/Fall2021/operating-systems/homeworks/homework3/report/report.tex
+\documentclass{article}
+\usepackage[a4paper, total={6in, 10in}]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+\title{CS221: Operating Systems\\ \Huge Homework 3 Report}
+\author{Ali Hamza}
+\date{\today}
+
+\begin{document}
+\maketitle    
+\section{Introduction}
+\subsection{Features \& Components}
+This homework creates a multithreaded client-server file transfer system. The homework has the following components:
+\begin{itemize}
+    \item A server that remains open despite the client disconnecting. The server will continue to accept connections and transfer requested files.
+    \item The server will be able to clients simultaneously, but this process is not multithreaded.
+    \item A client that connects to the server, requests a file, and then disconnects from the server upon succesful or unsuccessful file transfer.
+    \item The filetransfer protocol is multithreaded and uses a mutex to ensure that only one thread is accessing the file at a time.
+    \item The filetransfer makes sure the empty characters are not being written and the new file created is the same size as the original file.
+    \item The codebase contains 4 files:
+        \begin{itemize}
+            \item \texttt{server.c}
+            \item \texttt{client.c}
+            \item \texttt{helpers.h}
+            \item \texttt{makefile}
+            \end{itemize}
+\end{itemize}
+\subsection{Usage}
+To compile the code, run the following command in the terminal:
+\begin{verbatim}
+     make
+\end{verbatim}
+To run the server, type:
+\begin{verbatim}
+    ./server <ip> <port>
+\end{verbatim}
+To run the client, type:
+\begin{verbatim}
+    ./client <ip> <port> <requested filename> <save as filename>
+\end{verbatim}
+For example, to run the server and client on the same local machine (\texttt{127.0.0.1}), on port \texttt{8080}, and to request a file named \texttt{test.txt} and save it as \texttt{testNew.txt}, type:
+\begin{verbatim}
+   ./server 127.0.0.1 8080 (Terminal 1)
+   ./client 127.0.0.1 8080 test.txt testNew.txt (Terminal 2)
+\end{verbatim}
+\subsection{Functions}
+In the \texttt{server.c} file, there are the following functions:
+\begin{verbatim}
+    int sendFile(int socket);
+    * Sends file to client in a single thread
+    * @param socket - socket to send file to
+    * @return 1 if file send, 0 if file not sent
+
+    void *threadedFileRead(void *threadarg);
+    * Reads and Sends a certain chunk of a file
+    * @param *threadarg - struct containing fp, socket, buffer, s, f, fSize
+    * @return void*
+
+    int threadedSendFile(int socket);
+    * Sends file to client via multiple threads
+    * @param socket - socket to send file to
+    * @return 1 if file send, 0 if file not sent
+\end{verbatim}
+In the \texttt{client.c} file, there are the following functions, and have the following functionalities.
+\begin{verbatim}
+    int recieveFile(int socket, char *filename);
+    * Recieves file from server in a single thread
+    * @param socket - socket to recieve file from
+    * @param filename - name of file to recieve
+    * @return 1 if file recieved, 0 if file not recieved
+    
+    void *threadedFileWrite(void *threadarg);
+    * Recieves and Writes a certain chunk to a file
+    * @param *threadarg - struct containing fp, socket, buffer, s, f, fSize
+    * @return void*
+    
+    int threadedRecieveFile(int socket, char *filename);
+    * Recieves file from server via multiple threads
+    * @param socket - socket to recieve file from
+    * @param filename - name of file to recieve
+    * @return 1 if file recieved, 0 if file not recieved
+\end{verbatim}
+In the \texttt{helpers.h} file, there are the following functions:
+\begin{verbatim}
+    struct thread_data;
+    * Defines a struct for sending to individual threads
+    
+    void error(char *msg);
+    * Prints an emboldend red error message to terminal, e.g. [-]Error:<msg>
+    
+    void success(char *msg);
+    * Prints an emboldend green success message to terminal, e.g. [+]Success:<msg>
+    
+    void wait(char *msg);
+    * Prints an emboldend yellow waiting message to terminal, e.g. [*]Wait:<msg>...
+    
+    void reply(char *msg);
+    * Prints server messages on client-side, e.g. [S]:<msg>
+\end{verbatim}
+% \newpage
+% \section{Testing}
+
+% \begin{enumerate}
+%     \item\texttt{Text File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread}
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{Image File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread}
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{Video File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread}
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{PDF File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread}
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{ZIP File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread}
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+
+% \end{enumerate}
+% \newpage
+% \section{Code}
+% \subsection{\texttt{server.c}}
+% \lstinputlisting[language=c]{server.c}
+% \newpage
+% \subsection{\texttt{client.c}}
+% \lstinputlisting[language=c]{client.c}
+% \newpage
+% \subsection{\texttt{helpers.h}}
+% \lstinputlisting[language=c]{helpers.h}
+
+\end{document}
