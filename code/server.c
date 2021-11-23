@@ -25,7 +25,7 @@ void *threadedFileRead(void *threadarg);
 * @param socket - socket to send file to
 * @return 1 if file send, 0 if file not sent
 */
-int threadedSendFile(int socket);
+int threadedSendFile(int socket, char *fileName, int NUM_THREADS);
 
 const char *message = "Hello Client, I have received your connection";
 const char *dir = "server_dir";
@@ -39,7 +39,6 @@ int main(int argc, char *argv[])
 	// Socket variables
 	int sSocket, cSocket, c;
 	struct sockaddr_in server, client;
-
 	if ((sSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
 		error("Could not create socket");
@@ -58,33 +57,64 @@ int main(int argc, char *argv[])
 	}
 	success("Socket binded.");
 	// Listen for connections for up to 10 connections
-	listen(sSocket, 10);
-	wait("incoming connections");
+
 	// Accept connection from client
 	c = sizeof(struct sockaddr_in);
+	char *fileName[100];
+	int NUM_THREADS;
+
+	listen(sSocket, 10);
+	wait("incoming connections");
 	while ((cSocket = accept(sSocket, (struct sockaddr *)&client, (socklen_t *)&c)))
 	{
-		// Server Side prompt and greeting sent.
-		success("Connection accepted.");
 		write(cSocket, message, strlen(message));
-		printf("NUM THREADS: %d\n", NUM_THREADS);
-
-		if (threadedSendFile(cSocket))
+		success("Connection accepted.");
+		while (1)
 		{
-			success("File sent.");
-		}
-		else
-		{
-			error("File not sent.");
-		}
-		wait("incoming connections");
-		if (cSocket < 0)
-		{
-			error("Connection failed.");
-			return 1;
+			read(cSocket, fileName, 100);
+			read(cSocket, &NUM_THREADS, sizeof(NUM_THREADS));
+			if (strcmp((void *)fileName, "EXIT") == 0)
+			{
+				success("Client has disconnected.");
+				wait("incoming connections");
+				memset(fileName, 0, 100);
+				memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+				cSocket = 0;
+				break;
+			}
+			if (NUM_THREADS == 0)
+			{
+				error("Number of threads must be greater than 0");
+				memset(fileName, 0, 100);
+				memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+				break;
+			}
+			if (cSocket < 0)
+			{
+				error("Connection failed.");
+				memset(fileName, 0, 100);
+				memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+				break;
+			}
+			if (threadedSendFile(cSocket, (void *)fileName, NUM_THREADS))
+			{
+				success("File sent.");
+				memset(fileName, 0, 100);
+				memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+				continue;
+			}
+			else
+			{
+				error("File not sent.");
+				memset(fileName, 0, 100);
+				memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+				continue;
+			}
+			
 		}
 	}
 
+	close(cSocket);
 	close(sSocket);
 	success("Socket closed.");
 	return 0;
@@ -100,6 +130,7 @@ int sendFile(int socket)
 	FILE *fp = fopen((void *)fileName, "rb");
 	if (fp == NULL)
 		return 0;
+
 	// Get file size
 	fseek(fp, 0L, SEEK_END);
 	long fSize = ftell(fp);
@@ -112,7 +143,6 @@ int sendFile(int socket)
 
 	for (int i = 0; i < fSize; i += SIZE)
 	{
-
 		if (fSize - i < SIZE)
 		{
 			fread(buffer, sizeof(char), fSize - i, fp);
@@ -138,7 +168,8 @@ void *threadedFileRead(void *threadarg)
 	long s = data->s;
 	long f = data->f;
 	long fSize = data->fSize;
-	printf("PID: %d, TID: %d\n", getpid(), pthread_self());
+	// printf("PID: %d, TID: %d\n", getpid(), pthread_self());
+	write(socket, &data->id, sizeof(int));
 	for (long i = s; i < f; i += SIZE)
 	{
 		pthread_mutex_lock(&readLock);
@@ -156,11 +187,8 @@ void *threadedFileRead(void *threadarg)
 	}
 }
 
-int threadedSendFile(int socket)
+int threadedSendFile(int socket, char *fileName, int NUM_THREADS)
 {
-	// reads filename
-	char *fileName[SIZE];
-	read(socket, fileName, SIZE);
 
 	// Open file;
 	FILE *fp = fopen((void *)fileName, "rb");
@@ -189,6 +217,7 @@ int threadedSendFile(int socket)
 		td[i].s = i * (fSize / NUM_THREADS);
 		td[i].f = (i + 1) * (fSize / NUM_THREADS);
 		td[i].fSize = fSize;
+		td[i].id = i;
 
 		// threadedFileRead((void *)&td[i]);
 		pthread_create(&threads[i], NULL, (void *)threadedFileRead, (void *)&td[i]);
@@ -197,6 +226,7 @@ int threadedSendFile(int socket)
 	{
 		pthread_join(threads[i], NULL);
 	}
+	
 	fclose(fp);
 	return 1;
 }
