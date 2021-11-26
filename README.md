@@ -119,3 +119,4 @@ The design of the server is as follows:
     with the name given by the user.
 The below figure shows the server's design.
 ![Server-Client Interaction Design](report/design1.png)
+
