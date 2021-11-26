@@ -1,176 +1,198 @@
-#include <arpa/inet.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include "helpers.h"
-#include <pthread.h>
+#include "client.h"
 
-// Forward declaration of functions
-/*
- * Recieves file from server in a single thread
- * @param socket - socket to recieve file from
- * @param filename - name of file to recieve
- * @return 1 if file recieved, 0 if file not recieved
- */
-int recieveFile(int socket, char *filename);
-/*
- * Writes a certain chunk to a file
- * @param *threadarg - struct containing fp, socket, buffer, s, f, fSize
- * @return void*
- */
-void *threadedFileWrite(void *threadarg);
-/*
- * Recieves file from server via multiple threads
- * @param socket - socket to recieve file from
- * @param filename - name of file to recieve
- * @return 1 if file recieved, 0 if file not recieved
- */
-int threadedRecieveFile(int socket, char *filename);
-static pthread_mutex_t writeLock = PTHREAD_MUTEX_INITIALIZER;
-
-int main(int argc, char *argv[])
-{
-    ////// Initialize variables //////
-    char *ip = argv[1];
-    int port = atoi(argv[2]);
-    char *fileName = argv[3];
-    char *newfileName = argv[4];
-    printf("%s\n", newfileName);
-    // int NUM_THREADS = atoi(argv[5]);
-    // Socket variables
-    int cSocket;
-    struct sockaddr_in server;
-    char *server_reply[SIZE];
-
-    ////// Establish Connection //////
-    if ((cSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        error("Could not create socket.");
-        exit(1);
+int main(int argc, char *argv[]) {
+  ////// Initialize variables //////
+  char *ip = argv[1];
+  int port = atoi(argv[2]);
+  // Socket variables
+  int cSocket;
+  struct sockaddr_in server;
+  char *server_reply[100];
+  ////// Establish Connection //////
+  if ((cSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    error("Could not create socket.");
+    exit(1);
+  }
+  success("Socket created.");
+  // Set server address
+  server.sin_addr.s_addr = inet_addr(ip);
+  server.sin_family = AF_INET;
+  server.sin_port = htons(port);
+  // Connect to server
+  if (connect(cSocket, (struct sockaddr *)&server, sizeof(server)) < 0) {
+    error("Connection failed.");
+    exit(1);
+  }
+  success("Connection established.");
+  char *fileName[100];
+  char *newfileName[100];
+  int NUM_THREADS = 0;
+  /////// Begin file request ///////
+  read(cSocket, server_reply, 100);
+  reply((void *)server_reply);
+  /////// File name sent to server ///////
+  while (1) {
+    printf("Requested file name [Enter \"EXIT\" to quit]: ");
+    scanf("%s", fileName);
+    write(cSocket, fileName, strlen((void *)fileName));
+    if (strcmp((void *)fileName, "EXIT") == 0) {
+      memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+      memset(newfileName, 0, sizeof(newfileName));
+      memset(fileName, 0, sizeof(fileName));
+      break;
     }
-    success("Socket created.");
-    // Set server address
-    server.sin_addr.s_addr = inet_addr(ip);
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-    // Connect to server
-    if (connect(cSocket, (struct sockaddr *)&server, sizeof(server)) < 0)
-    {
-        error("Connection failed.");
-        exit(1);
+    while (NUM_THREADS < 1) {
+      printf("Number of threads must be greater than 0.\n");
+      printf("Number of threads: ");
+      scanf("%d", &NUM_THREADS);
     }
-    success("Connection established.");
-
-    /////// Begin file request ///////
-    read(cSocket, server_reply, SIZE);
-    reply((void *)server_reply);
+    write(cSocket, &NUM_THREADS, sizeof(NUM_THREADS));
     /////// File name sent to server ///////
-    // write(cSocket, &NUM_THREADS, sizeof(NUM_THREADS));
-    write(cSocket, fileName, strlen(fileName));
-
+    printf("Save file as: ");
+    scanf("%s", newfileName);
     /////// File recieved from server ///////
-    if (threadedRecieveFile(cSocket, newfileName))
-        success("File received.");
-    else
-        error("File could not be recieved.");
+    if (threadedRecieveFile(cSocket, (void *)newfileName, NUM_THREADS, ip,
+                            port)) {
+      success("File received.");
+      memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+      memset(newfileName, 0, sizeof(newfileName));
+      memset(fileName, 0, sizeof(fileName));
+      continue;
+    } else {
+      error("File could not be recieved.");
+      memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+      memset(newfileName, 0, sizeof(newfileName));
+      memset(fileName, 0, sizeof(fileName));
+      continue;
+    }
+    if (cSocket == -1) {
+      error("Connection lost.");
+      memset(&NUM_THREADS, 0, sizeof(NUM_THREADS));
+      memset(newfileName, 0, sizeof(newfileName));
+      memset(fileName, 0, sizeof(fileName));
+      exit(1);
+    }
     /////// File sent to server ///////
+  }
+  free(ip);
+  close(cSocket);
+  success("Socket closed.");
+  return 0;
+  /////// End file request ///////
+}
+
+void *threadedFileWrite(void *threadarg) {
+
+  struct thread_data *data = (struct thread_data *)threadarg;
+  int cSocket;
+  struct sockaddr_in server;
+
+  char *file = (char *)malloc(sizeof(char) * 20);
+  char part[3];
+
+  if ((cSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     close(cSocket);
-    success("Socket closed.");
+  // Set server address
+  server.sin_addr.s_addr = inet_addr(data->ip);
+  server.sin_family = AF_INET;
+  server.sin_port = htons(data->port);
+  // Connect to server
+  if (connect(cSocket, (struct sockaddr *)&server, sizeof(server)) < 0)
+    close(cSocket);
+
+  printf("Port: %d, thread: %d, Size: %ld, s: %ld, f: %ld, filepart: %s\n",
+         data->port, data->id, data->f - data->s, data->s, data->f,
+         data->fileName);
+  
+  FILE *fp = fopen(data->fileName, "wb");
+
+  long SIZE = (data->f - data->s)/512;
+  char *buffer = (char *)malloc(sizeof(char) * SIZE);
+  int n;
+  for(long i = data->s ; i < data->f ; i+= SIZE) {
+    if(i + SIZE > data->f) {
+      n = read(cSocket, buffer, data->f - i);
+      fwrite(buffer, sizeof(char), n, fp);
+      // pwrite(fileno(fp), buffer, data->f - i, i);
+      memset(buffer, 0, SIZE);
+    } else {
+      n = read(cSocket, buffer, SIZE);
+      fwrite(buffer, sizeof(char), n, fp);
+      // pwrite(fileno(fp), buffer, SIZE, i);
+      memset(buffer, 0, SIZE);
+    }
+
+  }
+  memset(buffer, 0, sizeof(buffer));
+  free(buffer);
+
+  fclose(fp);
+  free(file);
+  close(cSocket);
+  pthread_exit(NULL);
+}
+
+int threadedRecieveFile(int socket, char *filename, int NUM_THREADS, char *ip,
+                        int port) {
+  // Recieve file size
+  long fSize;
+  read(socket, &fSize, sizeof(long));
+  pthread_t threads[NUM_THREADS];
+  struct thread_data td[NUM_THREADS];
+  FILE *fp = fopen(filename, "wb");
+
+  if (fp == NULL)
     return 0;
-    /////// End file request ///////
-}
 
-int recieveFile(int socket, char *filename)
-{
-    // Server sends file size
-    long fSize;
-    read(socket, &fSize, sizeof(long));
-    // printf("File size: %ld bytes\n", fSize);
+  printf("\033[1;33m");
+  printf("[*]Using %d threads to recieve file.\n", NUM_THREADS);
+  printf("\033[0m");
 
-    int n;
-    char buffer[SIZE];
-    FILE *fp = fopen(filename, "wb");
+  for (int i = 0; i < NUM_THREADS; i++) {
+    // Add data to struct for each thread
+    char part[3];
+    sprintf(part, "%d", i);
+    td[i].fileName = (char *)malloc(sizeof(char) * 20);
+    sprintf(td[i].fileName, "%s%s%s", temp, part, ext);
+    memset(part, 0, sizeof(part));
+    td[i].s = i * (fSize / NUM_THREADS);
+    if (i == (NUM_THREADS - 1))
+      td[i].f = fSize - (fSize / NUM_THREADS);
+    else
+      td[i].f = (i + 1) * (fSize / NUM_THREADS);
+    td[i].fSize = fSize;
+    td[i].id = i;
+    td[i].ip = ip;
+    td[i].port = port + (i + 1);
+    printf("Port: %d, thread: %d, Size: %ld, s: %ld, f: %ld\n", td[i].port,
+           td[i].id, td[i].f - td[i].s, td[i].s, td[i].f);
 
-    if (fp == NULL)
-        return 0;
+    // Create thread
+    pthread_create(&threads[i], NULL, (void *)threadedFileWrite,
+                   (void *)&td[i]);
+  }
 
-    wait("for file to be recieved.");
-    for (int i = 0; i < fSize; i += SIZE)
-    {
-        if ((n = read(socket, buffer, SIZE)) < 0)
-        {
-            error("Error reading file.");
-            return 0;
-        }
-        fwrite(buffer, sizeof(char), n, fp);
-    }
+  for (int i = 0; i < NUM_THREADS; i++) {
+    pthread_join(threads[i], NULL);
+  }
 
-    fclose(fp);
-    return 1;
-}
+  for (int i = 0; i < NUM_THREADS; i++) {
 
-void *threadedFileWrite(void *threadarg)
-{
-    int n;
-    // Get struct from threadarg
-    struct thread_data *data = (struct thread_data *)threadarg;
-    printf("PID: %d, TID: %d\n", getpid(), pthread_self());
-    for (long i = data->s; i < data->f; i += SIZE)
-    {
-        if ((n = read(data->socket, data->buffer, SIZE)) < 0)
-        {
-            error("Error writing file.");
-        }
-        pthread_mutex_lock(&writeLock);
-        if (data->fSize - i < SIZE)
-            fwrite(data->buffer, sizeof(char), data->fSize - i, data->fp);
-        else
-            fwrite(data->buffer, sizeof(char), SIZE, data->fp);
-        bzero(data->buffer, SIZE);
-        pthread_mutex_unlock(&writeLock);
-    }
-}
+    FILE *temp = fopen(td[i].fileName, "rb");
+    fseek(temp, 0, SEEK_END);
+    long fsize = ftell(temp);
+    fseek(temp, 0, SEEK_SET);
 
-int threadedRecieveFile(int socket, char *filename)
-{
-    // Recieve file size
-    long fSize;
-    read(socket, &fSize, sizeof(long));
-    // Initialize variables depending on number of threads
-    char *buffer[NUM_THREADS];
-    pthread_t threads[NUM_THREADS];
-    struct thread_data td[NUM_THREADS];
-    // Open file in write binary mode
-    FILE *fp = fopen(filename, "wb");
-    if (fp == NULL)
-        return 0;
+    char *buffer = (char *)malloc(sizeof(char) * fsize);
+    fread(buffer, 1, fsize, temp);
+    fwrite(buffer, sizeof(char), fsize, fp);
+    memset(buffer, 0, sizeof(buffer));
 
-    printf("\033[1;33m");
-    printf("[*]Using %d threads to recieve file.\n", NUM_THREADS);
-    printf("\033[0m");
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
-        // Add data to struct for each thread
-        buffer[i] = (char *)malloc(SIZE);
-        td[i].fp = fp;
-        td[i].socket = socket;
-        td[i].buffer = buffer[i];
-        td[i].s = i * fSize / NUM_THREADS;
-        td[i].f = (i + 1) * fSize / NUM_THREADS;
-        td[i].fSize = fSize;
-        // threadedFileWrite((void*)&td[i]);
-        // Create thread to write to file
-        pthread_create(&threads[i], NULL, (void *)threadedFileWrite, (void *)&td[i]);
-    }
-    // Wait for threads to finish
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
-        pthread_join(threads[i], NULL);
-    }
+    free(buffer);
+    fclose(temp);
+    remove(td[i].fileName);
+  }
 
-    fclose(fp);
-    return 1;
+  fclose(fp);
+  return 1;
 }

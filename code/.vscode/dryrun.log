@@ -1,0 +1,5 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/home/aliha/Fall2021/operating-systems/homeworks/homework3/code'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/home/aliha/Fall2021/operating-systems/homeworks/homework3/code'
+ 
