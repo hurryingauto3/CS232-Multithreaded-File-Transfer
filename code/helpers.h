@@ -14,6 +14,7 @@ struct thread_data
     long s,f,fSize;
     int id, port;
     char *ip;
+    char *fileName;
 };
 // Output functions
 void error(char *msg)

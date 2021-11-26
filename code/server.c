@@ -80,14 +80,13 @@ int main(int argc, char *argv[]) {
 
 void *threadedFileRead(void *threadarg) {
   struct thread_data *data = (struct thread_data *)threadarg;
-  
+
   int sSocket, cSocket, c;
   struct sockaddr_in server, client;
   c = sizeof(struct sockaddr_in);
 
-  printf("Size: %ld", data->f - data->s);
 
-  if ((sSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+  if ((sSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     close(sSocket);
     pthread_exit(NULL);
   }
@@ -111,32 +110,29 @@ void *threadedFileRead(void *threadarg) {
     pthread_exit(NULL);
   }
   printf("Port: %d, thread: %d, Size: %ld, s: %ld, f: %ld\n", data->port,
-  data->id, data->f - data->s, data->s, data->f);
+         data->id, data->f - data->s, data->s, data->f);
   write(cSocket, &data->id, sizeof(data->id));
 
-  long SIZE = data->f - data->s;
+  long SIZE = (data->f - data->s);
   char *buffer = (char *)malloc(sizeof(char) * SIZE);
+  for(long i = data->s ; i < data->f ; i+= SIZE) {
+    if(i + SIZE > data->f) {
+      pread(fileno(data->fp), buffer, data->f - i, i);
+      write(cSocket, buffer, data->f - i);
+      memset(buffer, 0, SIZE);
+    } else {
+      pread(fileno(data->fp), buffer, SIZE, i);
+      write(cSocket, buffer, SIZE);
+      memset(buffer, 0, SIZE);
+    }
+
+  }
   pread(fileno(data->fp), buffer, SIZE, data->s);
 
   write(cSocket, buffer, SIZE);
   memset(buffer, 0, SIZE);
   free(buffer);
 
-  // for (long i = data->s; i < data->f; i += SIZE) {
-  //   if (data->f- i < SIZE) {
-  //     char *buffer = (char*)malloc(data->fSize - i);
-  //     fread(buffer, sizeof(char), data->fSize - i, data->fp);
-  //     write(cSocket, buffer, data->fSize - i);
-  //     memset(buffer, 0, data->fSize - i);
-  //     free(buffer);
-  //   } else {
-  //     char *buffer = (char*)malloc(SIZE*sizeof(char));
-  //     fread(buffer, sizeof(char), SIZE, data->fp);
-  //     write(cSocket, buffer, SIZE);
-  //     memset(buffer, 0, SIZE);
-  //     free(buffer);
-  //   }
-  // }
   close(cSocket);
   close(sSocket);
   pthread_exit(NULL);
@@ -153,8 +149,6 @@ int threadedSendFile(int socket, char *fileName, int NUM_THREADS, char *ip,
   fseek(fp, 0, SEEK_END);
   long fSize = ftell(fp);
   fseek(fp, 0, SEEK_SET);
-  // fSize = ntohl(fSize);
-  printf("File size: %ld\n", fSize);
   // Send file size to client
   write(socket, &fSize, sizeof(long));
   // Send file to client
@@ -169,7 +163,7 @@ int threadedSendFile(int socket, char *fileName, int NUM_THREADS, char *ip,
 
     td[i].fp = fp;
     td[i].s = i * (fSize / NUM_THREADS);
-    if(i == NUM_THREADS - 1)
+    if (i == NUM_THREADS - 1)
       td[i].f = fSize;
     else
       td[i].f = (i + 1) * (fSize / NUM_THREADS);
@@ -177,10 +171,12 @@ int threadedSendFile(int socket, char *fileName, int NUM_THREADS, char *ip,
     td[i].id = i;
     td[i].ip = ip;
     td[i].port = port + (i + 1);
-    
-
+    printf("Port: %d, thread: %d, Size: %ld, s: %ld, f: %ld, filepart: %s\n",
+         td[i].port, td[i].id, td[i].f - td[i].s, td[i].s, td[i].f);
+  
     pthread_create(&threads[i], NULL, (void *)threadedFileRead, (void *)&td[i]);
   }
+
   for (int i = 0; i < NUM_THREADS; i++) {
     pthread_join(threads[i], NULL);
   }
