@@ -8,69 +8,44 @@ system. The homework has the following components:
 -   A server that remains open despite the client disconnecting. The
     server will continue to accept connections and transfer requested
     files.
-
 -   The server will be able to clients simultaneously, but this process
     is not multithreaded.
-
 -   A client that connects to the server, requests a file, and then
     remains connected until the user disconnects.
-
 -   The filetransfer protocol is multithreaded and uses multiple sockets
     to send the file which achieves data security.
-
 -   The filetransfer makes sure the empty characters are not being
     written and the new file created is the same size as the original
     file.
-
 -   The codebase contains 4 files:
 
     -   `server.c`
-
     -   `server.h`
-
     -   `client.c`
-
     -   `client.h`
-
     -   `helpers.h`
-
     -   `makefile`
-
 ## Usage
-
 To compile the code, run the following command in the terminal:
-
          make
-
 To run the server, type:
-
         ./server <ip> <port>
-
 To run the client, type:
-
         ./client <ip> <port>
-
 For example, to run the server and client on the same local machine
 (`127.0.0.1`), on port `8080`, and to request a file named `test.txt`
 and save it as `testNew.txt`, type:
-
        ./server 127.0.0.1 8080 (Terminal 1)
        ./client 127.0.0.1 8080 (Terminal 2)
-
 The client will request the user to input:
-
 1.  Requested file name
-
 2.  Number of threads to transfer in
-
 3.  Save file as name
-
 The user can disconnect using the `EXIT` command.
 
 ::: center
-![image](usage.png)
+![image](../report/usage.png)
 :::
-
 ## Functions
 
 In the `server.c` file, there are the following functions:
