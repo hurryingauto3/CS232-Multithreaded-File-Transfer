@@ -1,11 +1,3 @@
----
-author:
-- Ali Hamza
-title: |
-  CS221: Operating Systems\
-  Homework 3 Report
----
-
 # Introduction
 
 ## Features & Components
@@ -166,4 +158,4 @@ The design of the server is as follows:
 
 The below figure shows the server's design.
 
-![Server-Client Interaction Design](report/design.png)
+![Server-Client Interaction Design](report/design1.png)
