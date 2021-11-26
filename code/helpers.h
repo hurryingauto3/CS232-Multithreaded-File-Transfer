@@ -6,14 +6,14 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#define SIZE 512
+// #define SIZE 1024
 
 struct thread_data
 {   
     FILE *fp;
-    char *buffer;
     long s,f,fSize;
-    int socket, id;
+    int id, port;
+    char *ip;
 };
 // Output functions
 void error(char *msg)

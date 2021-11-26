@@ -4,6 +4,9 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{tikz}
+\def\checkmark{\tikz\fill[scale=0.4](0,.35) -- (.25,0) -- (1,.7) -- (.25,.15) -- cycle;}
+\def \xmark{\tikz\draw[scale=0.4](0,.35) -- (.25,0) -- (1,.7) -- (.25,.15) -- cycle;}
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -125,42 +128,42 @@ In the \texttt{helpers.h} file, there are the following functions:
     void reply(char *msg);
     * Prints server messages on client-side, e.g. [S]:<msg>
 \end{verbatim}
-% \newpage
-% \section{Testing}
+\newpage
+\section{Testing}
 
-% \begin{enumerate}
-%     \item\texttt{Text File}
-%     \begin{enumerate}
-%         \item \texttt{1 Thread}
-%         \item \texttt{5 Threads}
-%         \item \texttt{10 Threads}
-%     \end{enumerate}
-%     \item\texttt{Image File}
-%     \begin{enumerate}
-%         \item \texttt{1 Thread}
-%         \item \texttt{5 Threads}
-%         \item \texttt{10 Threads}
-%     \end{enumerate}
-%     \item\texttt{Video File}
-%     \begin{enumerate}
-%         \item \texttt{1 Thread}
-%         \item \texttt{5 Threads}
-%         \item \texttt{10 Threads}
-%     \end{enumerate}
-%     \item\texttt{PDF File}
-%     \begin{enumerate}
-%         \item \texttt{1 Thread}
-%         \item \texttt{5 Threads}
-%         \item \texttt{10 Threads}
-%     \end{enumerate}
-%     \item\texttt{ZIP File}
-%     \begin{enumerate}
-%         \item \texttt{1 Thread}
-%         \item \texttt{5 Threads}
-%         \item \texttt{10 Threads}
-%     \end{enumerate}
+\begin{enumerate}
+    \item\texttt{Text File: Name:text.txt, Size:11.6 kB}
+    \begin{enumerate}
+        \item \texttt{1 Thread} \checkmark
+        \item \texttt{5 Threads}
+        \item \texttt{10 Threads}
+    \end{enumerate}
+    \item\texttt{Image File: Name:image.jpg, Size:462.1 kB}
+    \begin{enumerate}
+        \item \texttt{1 Thread} \checkmark
+        \item \texttt{5 Threads}
+        \item \texttt{10 Threads}
+    \end{enumerate}
+    \item\texttt{Video File}
+    \begin{enumerate}
+        \item \texttt{1 Thread} \checkmark
+        \item \texttt{5 Threads}
+        \item \texttt{10 Threads}
+    \end{enumerate}
+    \item\texttt{PDF File}
+    \begin{enumerate}
+        \item \texttt{1 Thread} \checkmark
+        \item \texttt{5 Threads}
+        \item \texttt{10 Threads}
+    \end{enumerate}
+    \item\texttt{ZIP File}
+    \begin{enumerate}
+        \item \texttt{1 Thread} \checkmark
+        \item \texttt{5 Threads}
+        \item \texttt{10 Threads}
+    \end{enumerate}
 
-% \end{enumerate}
+\end{enumerate}
 % \newpage
 % \section{Code}
 % \subsection{\texttt{server.c}}
