@@ -44,7 +44,7 @@ The client will request the user to input:
 The user can disconnect using the `EXIT` command.
 
 ::: center
-![image](../report/usage.png)
+![image](report/usage.png)
 :::
 ## Functions
 
