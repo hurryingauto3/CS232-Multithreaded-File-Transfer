@@ -42,12 +42,7 @@ The client will request the user to input:
 2.  Number of threads to transfer in
 3.  Save file as name
 The user can disconnect using the `EXIT` command.
-
-::: center
-![image](report/usage.png)
-:::
 ## Functions
-
 In the `server.c` file, there are the following functions:
 
 ``` {.c firstline="2" lastline="21" language="c"}
@@ -113,24 +108,14 @@ struct thread_data {
   char *fileName;
 };
 ```
-
-## Design
-
 The design of the server is as follows:
-
 1.  The server will accept connections from n clients.
-
 2.  The client will request a file from the server in `m` threads
-
 3.  The server will open `m` ports and send the file to the client in
     `m` threads.
-
 4.  The client will recieve the file from the server `m` ports and write
     the data to `m .part` files.
-
 5.  The client will then concatenate the `.part` files into a new file
     with the name given by the user.
-
 The below figure shows the server's design.
-
 ![Server-Client Interaction Design](report/design1.png)
