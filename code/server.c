@@ -115,21 +115,22 @@ void *threadedFileRead(void *threadarg) {
 
   long SIZE = (data->f - data->s);
   char *buffer = (char *)malloc(sizeof(char) * SIZE);
-  for(long i = data->s ; i < data->f ; i+= SIZE) {
-    if(i + SIZE > data->f) {
-      pread(fileno(data->fp), buffer, data->f - i, i);
-      write(cSocket, buffer, data->f - i);
-      memset(buffer, 0, SIZE);
-    } else {
-      pread(fileno(data->fp), buffer, SIZE, i);
-      write(cSocket, buffer, SIZE);
-      memset(buffer, 0, SIZE);
-    }
-
-  }
   pread(fileno(data->fp), buffer, SIZE, data->s);
-
   write(cSocket, buffer, SIZE);
+  
+  // for(long i = data->s ; i < data->f ; i+= SIZE) {
+  //   if(i + SIZE > data->f) {
+  //     pread(fileno(data->fp), buffer, data->f - i, i);
+  //     write(cSocket, buffer, data->f - i);
+  //     memset(buffer, 0, SIZE);
+  //   } else {
+  //     pread(fileno(data->fp), buffer, SIZE, i);
+  //     write(cSocket, buffer, SIZE);
+  //     memset(buffer, 0, SIZE);
+  //   }
+
+  // }
+
   memset(buffer, 0, SIZE);
   free(buffer);
 

@@ -106,23 +106,25 @@ void *threadedFileWrite(void *threadarg) {
   
   FILE *fp = fopen(data->fileName, "wb");
 
-  long SIZE = (data->f - data->s)/512;
+  long SIZE = (data->f - data->s);
   char *buffer = (char *)malloc(sizeof(char) * SIZE);
-  int n;
-  for(long i = data->s ; i < data->f ; i+= SIZE) {
-    if(i + SIZE > data->f) {
-      n = read(cSocket, buffer, data->f - i);
-      fwrite(buffer, sizeof(char), n, fp);
-      // pwrite(fileno(fp), buffer, data->f - i, i);
-      memset(buffer, 0, SIZE);
-    } else {
-      n = read(cSocket, buffer, SIZE);
-      fwrite(buffer, sizeof(char), n, fp);
-      // pwrite(fileno(fp), buffer, SIZE, i);
-      memset(buffer, 0, SIZE);
-    }
+  int n = read(cSocket, buffer, SIZE);
+  fwrite(buffer, sizeof(char), n, fp);
 
-  }
+  // int n;
+  // for(long i = data->s ; i < data->f ; i+= SIZE) {
+  //   if(i + SIZE > data->f) {
+  //     n = read(cSocket, buffer, data->f - i);
+  //     fwrite(buffer, sizeof(char), n, fp);
+  //     // pwrite(fileno(fp), buffer, data->f - i, i);
+  //     memset(buffer, 0, SIZE);
+  //   } else {
+  //     n = read(cSocket, buffer, SIZE);
+  //     fwrite(buffer, sizeof(char), n, fp);
+  //     memset(buffer, 0, SIZE);
+  //   }
+
+  // }
   memset(buffer, 0, sizeof(buffer));
   free(buffer);
 
