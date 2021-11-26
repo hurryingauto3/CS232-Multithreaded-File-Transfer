@@ -45,13 +45,15 @@ This homework creates a multithreaded client-server file transfer system. The ho
 \begin{itemize}
     \item A server that remains open despite the client disconnecting. The server will continue to accept connections and transfer requested files.
     \item The server will be able to clients simultaneously, but this process is not multithreaded.
-    \item A client that connects to the server, requests a file, and then disconnects from the server upon succesful or unsuccessful file transfer.
-    \item The filetransfer protocol is multithreaded and uses a mutex to ensure that only one thread is accessing the file at a time.
+    \item A client that connects to the server, requests a file, and then remains connected until the user disconnects.
+    \item The filetransfer protocol is multithreaded and uses multiple sockets to send the file which achieves data security.
     \item The filetransfer makes sure the empty characters are not being written and the new file created is the same size as the original file.
     \item The codebase contains 4 files:
         \begin{itemize}
             \item \texttt{server.c}
+            \item \texttt{server.h}
             \item \texttt{client.c}
+            \item \texttt{client.h}
             \item \texttt{helpers.h}
             \item \texttt{makefile}
             \end{itemize}
@@ -67,103 +69,81 @@ To run the server, type:
 \end{verbatim}
 To run the client, type:
 \begin{verbatim}
-    ./client <ip> <port> <requested filename> <save as filename>
+    ./client <ip> <port>
 \end{verbatim}
 For example, to run the server and client on the same local machine (\texttt{127.0.0.1}), on port \texttt{8080}, and to request a file named \texttt{test.txt} and save it as \texttt{testNew.txt}, type:
 \begin{verbatim}
    ./server 127.0.0.1 8080 (Terminal 1)
-   ./client 127.0.0.1 8080 test.txt testNew.txt (Terminal 2)
+   ./client 127.0.0.1 8080 (Terminal 2)
 \end{verbatim}
+The client will request the user to input: 
+\begin{enumerate}
+    \item Requested file name
+    \item Number of threads to transfer in
+    \item Save file as name
+\end{enumerate}
+The user can disconnect using the \texttt{EXIT} command.
+\begin{center}
+    \includegraphics[scale=0.7]{usage.png}
+\end{center}
+\newpage
 \subsection{Functions}
 In the \texttt{server.c} file, there are the following functions:
-\begin{verbatim}
-    int sendFile(int socket);
-    * Sends file to client in a single thread
-    * @param socket - socket to send file to
-    * @return 1 if file send, 0 if file not sent
-
-    void *threadedFileRead(void *threadarg);
-    * Reads and Sends a certain chunk of a file
-    * @param *threadarg - struct containing fp, socket, buffer, s, f, fSize
-    * @return void*
-
-    int threadedSendFile(int socket);
-    * Sends file to client via multiple threads
-    * @param socket - socket to send file to
-    * @return 1 if file send, 0 if file not sent
-\end{verbatim}
+\lstinputlisting[firstline=2, lastline=21, language=c]{server.h}
 In the \texttt{client.c} file, there are the following functions, and have the following functionalities.
-\begin{verbatim}
-    int recieveFile(int socket, char *filename);
-    * Recieves file from server in a single thread
-    * @param socket - socket to recieve file from
-    * @param filename - name of file to recieve
-    * @return 1 if file recieved, 0 if file not recieved
-    
-    void *threadedFileWrite(void *threadarg);
-    * Recieves and Writes a certain chunk to a file
-    * @param *threadarg - struct containing fp, socket, buffer, s, f, fSize
-    * @return void*
-    
-    int threadedRecieveFile(int socket, char *filename);
-    * Recieves file from server via multiple threads
-    * @param socket - socket to recieve file from
-    * @param filename - name of file to recieve
-    * @return 1 if file recieved, 0 if file not recieved
-\end{verbatim}
-In the \texttt{helpers.h} file, there are the following functions:
-\begin{verbatim}
-    struct thread_data;
-    * Defines a struct for sending to individual threads
-    
-    void error(char *msg);
-    * Prints an emboldend red error message to terminal, e.g. [-]Error:<msg>
-    
-    void success(char *msg);
-    * Prints an emboldend green success message to terminal, e.g. [+]Success:<msg>
-    
-    void wait(char *msg);
-    * Prints an emboldend yellow waiting message to terminal, e.g. [*]Wait:<msg>...
-    
-    void reply(char *msg);
-    * Prints server messages on client-side, e.g. [S]:<msg>
-\end{verbatim}
+\lstinputlisting[firstline=2, lastline=22, language=c]{client.h}
+In the \texttt{helpers.h} file, there is the struct that is used to pass information to the threads.
+\lstinputlisting[firstline = 11, lastline= 20, language=c]{helpers.h}
 \newpage
-\section{Testing}
-
+\subsection{Design}
+The design of the server is as follows:
 \begin{enumerate}
-    \item\texttt{Text File: Name:text.txt, Size:11.6 kB}
-    \begin{enumerate}
-        \item \texttt{1 Thread} \checkmark
-        \item \texttt{5 Threads}
-        \item \texttt{10 Threads}
-    \end{enumerate}
-    \item\texttt{Image File: Name:image.jpg, Size:462.1 kB}
-    \begin{enumerate}
-        \item \texttt{1 Thread} \checkmark
-        \item \texttt{5 Threads}
-        \item \texttt{10 Threads}
-    \end{enumerate}
-    \item\texttt{Video File}
-    \begin{enumerate}
-        \item \texttt{1 Thread} \checkmark
-        \item \texttt{5 Threads}
-        \item \texttt{10 Threads}
-    \end{enumerate}
-    \item\texttt{PDF File}
-    \begin{enumerate}
-        \item \texttt{1 Thread} \checkmark
-        \item \texttt{5 Threads}
-        \item \texttt{10 Threads}
-    \end{enumerate}
-    \item\texttt{ZIP File}
-    \begin{enumerate}
-        \item \texttt{1 Thread} \checkmark
-        \item \texttt{5 Threads}
-        \item \texttt{10 Threads}
-    \end{enumerate}
-
+    \item The server will accept connections from n clients.
+    \item The client will request a file from the server in \texttt{m} threads
+    \item The server will open \texttt{m} ports and send the file to the client in \texttt{m} threads.
+    \item The client will recieve the file from the server \texttt{m} ports and write the data to \texttt{m .part} files.
+    \item The client will then concatenate the \texttt{.part} files into a new file with the name given by the user.
 \end{enumerate}
+The below figure shows the server's design.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[scale=0.4]{design.png}
+    \caption{Server-Client Interaction Design}
+\end{figure}
+% \newpage
+% \section{Testing}
+% \begin{enumerate}
+%     \item\texttt{Text File: Name:text.txt, Size:11.6 kB}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread} \checkmark
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{Image File: Name:image.jpg, Size:462.1 kB}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread} \checkmark
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{Video File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread} \checkmark
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{PDF File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread} \checkmark
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+%     \item\texttt{ZIP File}
+%     \begin{enumerate}
+%         \item \texttt{1 Thread} \checkmark
+%         \item \texttt{5 Threads}
+%         \item \texttt{10 Threads}
+%     \end{enumerate}
+% \end{enumerate}
 % \newpage
 % \section{Code}
 % \subsection{\texttt{server.c}}
@@ -171,8 +151,5 @@ In the \texttt{helpers.h} file, there are the following functions:
 % \newpage
 % \subsection{\texttt{client.c}}
 % \lstinputlisting[language=c]{client.c}
-% \newpage
-% \subsection{\texttt{helpers.h}}
-% \lstinputlisting[language=c]{helpers.h}
 
 \end{document}
