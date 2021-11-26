@@ -164,8 +164,6 @@ int threadedRecieveFile(int socket, char *filename, int NUM_THREADS, char *ip,
     td[i].id = i;
     td[i].ip = ip;
     td[i].port = port + (i + 1);
-    printf("Port: %d, thread: %d, Size: %ld, s: %ld, f: %ld\n", td[i].port,
-           td[i].id, td[i].f - td[i].s, td[i].s, td[i].f);
 
     // Create thread
     pthread_create(&threads[i], NULL, (void *)threadedFileWrite,
