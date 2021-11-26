@@ -1,15 +1,4 @@
 #include "helpers.h"
-#include <arpa/inet.h>
-#include <dirent.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 /*
  * Recieves file from server in a single thread
  * @param socket - socket to recieve file from
@@ -31,8 +20,6 @@ void *threadedFileWrite(void *threadarg);
  */
 int threadedRecieveFile(int socket, char *filename, int NUM_THREADS, char *ip,
                         int port);
-
-static pthread_mutex_t writeLock = PTHREAD_MUTEX_INITIALIZER;
 
 char *dir = "clientDir";
 char *temp = "temp";

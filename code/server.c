@@ -171,8 +171,6 @@ int threadedSendFile(int socket, char *fileName, int NUM_THREADS, char *ip,
     td[i].id = i;
     td[i].ip = ip;
     td[i].port = port + (i + 1);
-    printf("Port: %d, thread: %d, Size: %ld, s: %ld, f: %ld, filepart: %s\n",
-         td[i].port, td[i].id, td[i].f - td[i].s, td[i].s, td[i].f);
   
     pthread_create(&threads[i], NULL, (void *)threadedFileRead, (void *)&td[i]);
   }

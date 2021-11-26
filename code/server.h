@@ -1,13 +1,4 @@
 #include "helpers.h"
-#include <arpa/inet.h>
-#include <dirent.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
 /*
  * Sends file to client in a single thread
  * @param socket - socket to send file to
