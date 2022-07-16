@@ -25,7 +25,7 @@ system. The homework has the following components:
     -   `client.h`
     -   `helpers.h`
     -   `makefile`
-## Usage
+## Usage and Compilation instructions
 To compile the code, run the following command in the terminal:
          make
 To run the server, type:
